@@ -5,10 +5,11 @@ import toast from "react-hot-toast";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
-  const [imagePreview, setImagePreview] = useState(null);
+  const [image, setImage] = useState(null); // ✅ Change to hold the file itself
   const fileInputRef = useRef(null);
   const { sendMessage } = useChatStore();
 
+  // Handle image selection
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file.type.startsWith("image/")) {
@@ -16,31 +17,30 @@ const MessageInput = () => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result);
-    };
-    reader.readAsDataURL(file);
+    setImage(file); // ✅ Store the file itself
   };
 
+  // Remove selected image
   const removeImage = () => {
-    setImagePreview(null);
+    setImage(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Send message handler
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!text.trim() && !imagePreview) return;
+    if (!text.trim() && !image) return;
+
+    const formData = new FormData(); // ✅ Use FormData to send image and text
+    formData.append("text", text.trim());
+    if (image) formData.append("image", image); // ✅ Append the image file
 
     try {
-      await sendMessage({
-        text: text.trim(),
-        image: imagePreview,
-      });
+      await sendMessage(formData); // ✅ Send formData to backend
 
       // Clear form
       setText("");
-      setImagePreview(null);
+      setImage(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -49,11 +49,11 @@ const MessageInput = () => {
 
   return (
     <div className="p-4 w-full">
-      {imagePreview && (
+      {image && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
             <img
-              src={imagePreview}
+              src={URL.createObjectURL(image)} // ✅ Display selected image
               alt="Preview"
               className="w-20 h-20 object-cover rounded-lg border border-zinc-700"
             />
@@ -89,7 +89,7 @@ const MessageInput = () => {
           <button
             type="button"
             className={`hidden sm:flex btn btn-circle
-                     ${imagePreview ? "text-emerald-500" : "text-zinc-400"}`}
+                     ${image ? "text-emerald-500" : "text-zinc-400"}`}
             onClick={() => fileInputRef.current?.click()}
           >
             <Image size={20} />
@@ -98,7 +98,7 @@ const MessageInput = () => {
         <button
           type="submit"
           className="btn btn-sm btn-circle"
-          disabled={!text.trim() && !imagePreview}
+          disabled={!text.trim() && !image}
         >
           <Send size={22} />
         </button>

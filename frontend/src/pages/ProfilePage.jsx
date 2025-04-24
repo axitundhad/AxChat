@@ -10,15 +10,20 @@ const ProfilePage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append("profilePic", file); // Append the file to FormData
 
-    reader.readAsDataURL(file);
+    try {
+      // Send the file to the backend for Cloudinary upload
+      await updateProfile(formData);
 
-    reader.onload = async () => {
-      const base64Image = reader.result;
-      setSelectedImg(base64Image);
-      await updateProfile({ profilePic: base64Image });
-    };
+      // Show image preview before the upload is completed (optional)
+      setSelectedImg(URL.createObjectURL(file)); // Local preview
+
+    } catch (error) {
+      console.error("Failed to upload profile picture:", error);
+    }
   };
 
   return (
@@ -30,8 +35,7 @@ const ProfilePage = () => {
             <p className="mt-2">Your profile information</p>
           </div>
 
-          {/* avatar upload section */}
-
+          {/* Avatar upload section */}
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <img
@@ -46,9 +50,7 @@ const ProfilePage = () => {
                   bg-base-content hover:scale-105
                   p-2 rounded-full cursor-pointer 
                   transition-all duration-200
-                  ${
-                    isUpdatingProfile ? "animate-pulse pointer-events-none" : ""
-                  }
+                  ${isUpdatingProfile ? "animate-pulse pointer-events-none" : ""}
                 `}
               >
                 <Camera className="w-5 h-5 text-base-200" />
@@ -113,4 +115,5 @@ const ProfilePage = () => {
     </div>
   );
 };
+
 export default ProfilePage;
